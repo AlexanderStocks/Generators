@@ -8,6 +8,7 @@ import goods.RawPaper;
 import market.Market;
 
 import java.util.Optional;
+import java.util.Set;
 
 public class RecycleCenter extends Agent {
 
@@ -22,9 +23,9 @@ public class RecycleCenter extends Agent {
       for (RawMaterial material : disposedGood.get().getConstituentMaterials()) {
         if (material.origin == RawMaterial.Origin.NEW) {
           if (material instanceof RawPaper) {
-            market.sellRawPaper((RawPaper) material, this);
+            market.sellRawPaper( new RawPaper(RawMaterial.Origin.RECYCLED), this);
           } else {
-            market.sellRawCotton((RawCotton) material, this);
+            market.sellRawCotton(new RawCotton(RawMaterial.Origin.RECYCLED), this);
           }
         }
       }
