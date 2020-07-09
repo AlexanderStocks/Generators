@@ -35,6 +35,8 @@ public class LockableNode<E> {
   public E getItem() {
     return items.remove(0);
   }
+
+
   public void addItem(E item) {
     items.add(item);
   }
