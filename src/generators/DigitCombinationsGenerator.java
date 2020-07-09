@@ -5,43 +5,43 @@ import java.util.stream.StreamSupport;
 
 public class DigitCombinationsGenerator implements StringGenerator {
 
-  private int index = 0;
+  private StringBuilder digits;
+  private boolean firstTime;
 
-  private String previousString = "";
-  private final String[] digits = {"1", "2", "3", "4"};
-
-  public static void main(String[] args) {
-
+  public DigitCombinationsGenerator() {
+    this.digits = new StringBuilder();
+    this.firstTime = true;
   }
 
   @Override
   public String next() {
-
-    if (index == 0) {
-      index++;
-      return previousString;
-    } else if (index == 1) {
-      previousString = "1";
-      index++;
-      return previousString;
+    if (firstTime) {
+      firstTime = false;
+      return "";
+    }
+    if (digits.length() == 0) {
+      digits.append('5');
+      return "5";
+    }
+    if (digits.charAt(digits.length() - 1) == '8') {
+      goLeft(digits.length() - 1);
     } else {
-      for (int i = previousString.length() - 1; i >= 0; i--) {
-        if (i == 0 && previousString.charAt(i) == '4') {
-          previousString = "1" + previousString.substring(1);
-        } else {
-          if (previousString.charAt(i) == '4') { // change if have time
-            previousString = previousString.substring(0, previousString.length() - 1) + "1";
-          } else {
-              previousString =
-                previousString.substring(0, Math.max(i - 1, 0))
-                  + (previousString.charAt(i) + 1)
-                  + previousString.substring(i);
-            }
-          }
-        }
-      }
-      index++;
-    return previousString;
+      char lastChar = digits.charAt(digits.length() - 1);
+      digits.setCharAt(digits.length() - 1, (char) (lastChar + 1));
+    }
+    return digits.toString();
+  }
+
+  private void goLeft(int index) {
+    digits.setCharAt(index, '5');
+    if (index == 0) {
+      digits.insert(0, "5");
+    } else if (digits.charAt(index - 1) != '8'){
+      char lastChar = digits.charAt(index - 1);
+      digits.setCharAt(index - 1, (char) (lastChar + 1));
+    } else {
+      goLeft(index - 1);
+    }
   }
 
 
