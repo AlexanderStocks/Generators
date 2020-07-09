@@ -22,7 +22,7 @@ public final class Pair<S, T> {
 
   @Override
   public String toString() {
-    return "{" + left.toString() + ", " + right.toString() + "}";
+    return "[" + left.toString() + ", " + right.toString() + ']';
   }
 
   @Override
