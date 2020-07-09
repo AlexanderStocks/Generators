@@ -28,6 +28,11 @@ public class StockStressMonkey {
       new PrintStream(
           new OutputStream() {
             @Override
+
+
+
+
+
             public void write(int b) throws IOException {
               // Discard any write operation
             }
@@ -38,20 +43,20 @@ public class StockStressMonkey {
     stock = new StockImpl<>();
 
     // Comment out the following line if you want to see output on the output stream
-    System.setOut(psNull);
+    //System.setOut(psNull);
   }
 
   @Test
   public void unleashChaos() {
-    MockAgent agents[] = new MockAgent[StockStressMonkey.NUM_PUSHERS];
+    MockAgent[] agents = new MockAgent[StockStressMonkey.NUM_PUSHERS];
     Arrays.setAll(agents, i -> new MockAgent(1, null));
 
-    MonkeyPusher monkeyPushers[] = new MonkeyPusher[StockStressMonkey.NUM_PUSHERS];
+    MonkeyPusher[] monkeyPushers = new MonkeyPusher[StockStressMonkey.NUM_PUSHERS];
     Arrays.setAll(
         monkeyPushers,
         i -> new MonkeyPusher(agents[i], stock, StockStressMonkey.NUM_PRODUCTS_PER_PUSHER));
 
-    MonkeyPopper monkeyPoppers[] = new MonkeyPopper[StockStressMonkey.NUM_POPPERS];
+    MonkeyPopper[] monkeyPoppers = new MonkeyPopper[StockStressMonkey.NUM_POPPERS];
     final int num_pops_per_popper =
         (StockStressMonkey.NUM_PUSHERS * StockStressMonkey.NUM_PRODUCTS_PER_PUSHER)
             / StockStressMonkey.NUM_POPPERS;
@@ -62,8 +67,8 @@ public class StockStressMonkey {
 
     Arrays.setAll(monkeyPoppers, i -> new MonkeyPopper(stock, num_pops_per_popper));
 
-    Arrays.stream(monkeyPoppers).forEach(p -> p.start());
-    Arrays.stream(monkeyPushers).forEach(p -> p.start());
+    Arrays.stream(monkeyPoppers).forEach(Thread::start);
+    Arrays.stream(monkeyPushers).forEach(Thread::start);
 
     Arrays.stream(monkeyPushers)
         .forEach(
@@ -101,15 +106,15 @@ public class StockStressMonkey {
 
   @Test
   public void prioritiesEvenDuringChaos() {
-    MockAgent agents[] = new MockAgent[StockStressMonkey.NUM_PUSHERS];
+    MockAgent[] agents = new MockAgent[StockStressMonkey.NUM_PUSHERS];
     Arrays.setAll(agents, i -> new MockAgent(1, null));
 
-    MonkeyPusher monkeyPushers[] = new MonkeyPusher[StockStressMonkey.NUM_PUSHERS];
+    MonkeyPusher[] monkeyPushers = new MonkeyPusher[StockStressMonkey.NUM_PUSHERS];
     Arrays.setAll(
         monkeyPushers,
         i -> new MonkeyPusher(agents[i], stock, StockStressMonkey.NUM_PRODUCTS_PER_PUSHER));
 
-    Arrays.stream(monkeyPushers).forEach(p -> p.start());
+    Arrays.stream(monkeyPushers).forEach(Thread::start);
 
     Arrays.stream(monkeyPushers)
         .forEach(
@@ -132,7 +137,7 @@ public class StockStressMonkey {
     assertEquals(0, stock.size());
   }
 
-  private class MonkeyPusher extends Thread {
+  private static class MonkeyPusher extends Thread {
 
     private final MockAgent agent;
     private final Stock<MockProduct> stock;
@@ -157,7 +162,7 @@ public class StockStressMonkey {
     }
   }
 
-  private class MonkeyPopper extends Thread {
+  private static class MonkeyPopper extends Thread {
 
     private final Set<MockProduct> consumedProducts = new HashSet<>();
     private final Stock<MockProduct> stock;
@@ -174,7 +179,7 @@ public class StockStressMonkey {
         // If this does not terminate, something is wrong (or you are producing in total less than
         // numPops
         Optional<MockProduct> product = stock.pop();
-        product.ifPresent(p -> consumedProducts.add(p));
+        product.ifPresent(consumedProducts::add);
         // If you want to make sure it is still processing:
         //  if(consumedProducts.size() %1000 ==0){
         //      System.out.println("consumed: "+consumedProducts.size());

@@ -2,6 +2,9 @@ package datastructures;
 
 import domain.Agent;
 import domain.producttypes.ExchangeableGood;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -9,18 +12,46 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
 
-  private LockableNode<E> root = null;
-  private Lock rootLock = new ReentrantLock();
+  private Node<E> root = null;
+  //private Lock rootLock = new ReentrantLock();
 
   private AtomicInteger size = new AtomicInteger(0);
 
   @Override
-  public void push(E item, Agent agent) {
+  public synchronized void push(E item, Agent agent) {
+    /*
     addId(item, agent);
     size.incrementAndGet();
+    */
 
+    if (root == null) {
+       root = new Node<>(agent, item);
+    } else {
+        push(item, agent, root);
+    }
+    size.getAndIncrement();
   }
 
+  private void push(E item, Agent agent, Node<E> subtree) {
+    if (subtree.key() == agent.id) {
+      subtree.items.add(item);
+    } else if (agent.id < subtree.key()) {
+      if (subtree.left == null) {
+        subtree.left = new Node<>(agent, item);
+      } else {
+        push(item, agent, subtree.left);
+      }
+    } else {
+      if (subtree.right == null) {
+        subtree.right = new Node<>(agent, item);
+      } else {
+        push(item, agent, subtree.right);
+      }
+    }
+  }
+
+
+  /*
   private boolean addId(E item, Agent agent) {
     LockableNode<E> curr;
     LockableNode<E> parent;
@@ -68,6 +99,7 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     }
     return true;
   }
+   */
 
 
   @Override
@@ -78,6 +110,7 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     // the highest priority node should be the rightmost node, which can only be either a leaf or a
     // node with a single child (the left one).
 
+    /*
     if (root == null) { // empty tree
       return Optional.empty();
     }
@@ -101,11 +134,49 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     }
     size.decrementAndGet();
     return Optional.of(toReturn);
+     */
+    if (root == null) {
+       return Optional.empty();
+       }
+     Node<E> previous = null;
+     Node<E> current = root;
+     while (current.right != null) {
+       previous = current;
+       current = current.right;
+       }
+     E item = current.items.get(0);
+     current.items.remove(0);
+     if (current.items.isEmpty()) {
+       if (previous != null) {
+         previous.right = current.left;
+          } else {
+          root = root.left;
+          }
+        }
+     size.decrementAndGet();
+     return Optional.of(item);
   }
 
   @Override
   public int size() {
     return size.get();
+  }
+
+  private static class Node<E> {
+    private Agent agent;
+    private List<E> items;
+    private Node<E> left, right;
+
+    public Node(Agent agent, E firstItem) {
+      this.agent = agent;
+      this.items = new ArrayList<>();
+      items.add(firstItem);
+    }
+
+    private int key() {
+      return agent.id;
+    }
+
   }
 
 }
