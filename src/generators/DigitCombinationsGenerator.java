@@ -20,10 +20,10 @@ public class DigitCombinationsGenerator implements StringGenerator {
       return "";
     }
     if (digits.length() == 0) {
-      digits.append('5');
-      return "5";
+      digits.append('1');
+      return "1";
     }
-    if (digits.charAt(digits.length() - 1) == '8') {
+    if (digits.charAt(digits.length() - 1) == '4') {
       goLeft(digits.length() - 1);
     } else {
       char lastChar = digits.charAt(digits.length() - 1);
@@ -33,10 +33,10 @@ public class DigitCombinationsGenerator implements StringGenerator {
   }
 
   private void goLeft(int index) {
-    digits.setCharAt(index, '5');
+    digits.setCharAt(index, '1');
     if (index == 0) {
-      digits.insert(0, "5");
-    } else if (digits.charAt(index - 1) != '8'){
+      digits.insert(0, "1");
+    } else if (digits.charAt(index - 1) != '4'){
       char lastChar = digits.charAt(index - 1);
       digits.setCharAt(index - 1, (char) (lastChar + 1));
     } else {
