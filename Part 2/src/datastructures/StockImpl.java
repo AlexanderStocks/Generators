@@ -14,7 +14,9 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
 
   private Node<E> root = null;
 
-  private LockableNode<E> rootNode = null;
+  //Used in the fine grained implementation
+  //private LockableNode<E> rootNode = null;
+
   private Lock rootLock = new ReentrantLock();
 
   private AtomicInteger size = new AtomicInteger(0);
@@ -25,7 +27,7 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     size.incrementAndGet();
   }
 
-  /* This is the fine grained version
+  /* This is the fine grained version of push that uses addId
   @Override
   public synchronized void push(E item, Agent agent) {
     addId(item, agent);
@@ -55,8 +57,7 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     }
   }
 
-
-
+  /* Used in the fine grained implementation
   private void addId(E item, Agent agent) {
     LockableNode<E> curr;
     LockableNode<E> parent;
@@ -104,45 +105,54 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     }
     size.incrementAndGet();
   }
+  */
 
   @Override
   public synchronized Optional<E> pop() {
     if (root == null) {
        return Optional.empty();
-       }
+     }
      Node<E> previous = null;
      Node<E> current = root;
      while (current.right != null) {
        previous = current;
        current = current.right;
-       }
+     }
      E item = current.items.get(0);
      current.items.remove(0);
      if (current.items.isEmpty()) {
        if (previous != null) {
          previous.right = current.left;
-          } else {
-          root = root.left;
-          }
-        }
+       } else {
+         root = root.left;
+       }
+     }
      size.decrementAndGet();
      return Optional.of(item);
   }
 
-  /* This is the fine grained version
+  /* This is the fine grained version of pop
   @Override
-  public synchronized Optional<E> pop() {
+  public Optional<E> pop() {
 
-    if (root == null) { // empty tree
+    rootLock.lock();
+    if (rootNode == null) { // empty tree
+      rootLock.unlock();
       return Optional.empty();
     }
 
-    LockableNode<E> curr = root;
+    LockableNode<E> curr = rootNode;
     LockableNode<E> prev = null;
 
+    curr.lock();
+
     while (curr.right != null) {
+      if (prev != null) {
+        prev.unlock();
+      }
       prev = curr;
       curr = curr.right;
+      curr.lock();
     }
 
     E toReturn = curr.getItem();
@@ -151,10 +161,11 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
       if (prev != null) {
         prev.right = curr.left;
       } else {
-        root = root.left;
+        rootNode = rootNode.left;
       }
     }
     size.decrementAndGet();
+    curr.unlock();
     return Optional.of(toReturn);
   }
   */
