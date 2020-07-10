@@ -13,57 +13,62 @@ import java.util.concurrent.locks.ReentrantLock;
 public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
 
   private Node<E> root = null;
-  //private Lock rootLock = new ReentrantLock();
+
+  private LockableNode<E> rootNode = null;
+  private Lock rootLock = new ReentrantLock();
 
   private AtomicInteger size = new AtomicInteger(0);
 
   @Override
   public synchronized void push(E item, Agent agent) {
-    /*
+    push(item, agent, root);
+    size.incrementAndGet();
+  }
+
+  /* This is the fine grained version
+  @Override
+  public synchronized void push(E item, Agent agent) {
     addId(item, agent);
     size.incrementAndGet();
-    */
-
-    if (root == null) {
-       root = new Node<>(agent, item);
-    } else {
-        push(item, agent, root);
-    }
-    size.getAndIncrement();
   }
+  */
 
   private void push(E item, Agent agent, Node<E> subtree) {
-    if (subtree.key() == agent.id) {
-      subtree.items.add(item);
-    } else if (agent.id < subtree.key()) {
-      if (subtree.left == null) {
-        subtree.left = new Node<>(agent, item);
-      } else {
-        push(item, agent, subtree.left);
-      }
+    if (root == null) {
+      root = new Node<>(agent, item);
     } else {
-      if (subtree.right == null) {
-        subtree.right = new Node<>(agent, item);
+      if (subtree.key() == agent.id) {
+        subtree.items.add(item);
+      } else if (agent.id < subtree.key()) {
+        if (subtree.left == null) {
+          subtree.left = new Node<>(agent, item);
+        } else {
+          push(item, agent, subtree.left);
+        }
       } else {
-        push(item, agent, subtree.right);
+        if (subtree.right == null) {
+          subtree.right = new Node<>(agent, item);
+        } else {
+          push(item, agent, subtree.right);
+        }
       }
     }
   }
 
 
-  /*
-  private boolean addId(E item, Agent agent) {
+
+  private void addId(E item, Agent agent) {
     LockableNode<E> curr;
     LockableNode<E> parent;
 
     rootLock.lock();
-    if (root == null) {
-      root = new LockableNode<>(agent.id);
-      root.addItem(item);
+    if (rootNode == null) {
+      rootNode = new LockableNode<>(agent.id);
+      rootNode.addItem(item);
       rootLock.unlock();
 
     } else {
-      curr = root;
+      curr = rootNode;
       curr.lock();
       rootLock.unlock();
       int compare;
@@ -75,7 +80,7 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
         if (compare == 0) {
           curr.addItem(item);
           curr.unlock();
-          return false;
+          break;
         } else {
           curr = (compare > 0) ? curr.left : curr.right;
         }
@@ -97,20 +102,37 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
       }
       parent.unlock();
     }
-    return true;
+    size.incrementAndGet();
   }
-   */
-
 
   @Override
   public synchronized Optional<E> pop() {
-    // Hint: always returns a product from the highest priority node. If a node gets to zero
-    // products, it should be removed. Because this structure is a BST with nodes sorted by
-    // agent.id,
-    // the highest priority node should be the rightmost node, which can only be either a leaf or a
-    // node with a single child (the left one).
+    if (root == null) {
+       return Optional.empty();
+       }
+     Node<E> previous = null;
+     Node<E> current = root;
+     while (current.right != null) {
+       previous = current;
+       current = current.right;
+       }
+     E item = current.items.get(0);
+     current.items.remove(0);
+     if (current.items.isEmpty()) {
+       if (previous != null) {
+         previous.right = current.left;
+          } else {
+          root = root.left;
+          }
+        }
+     size.decrementAndGet();
+     return Optional.of(item);
+  }
 
-    /*
+  /* This is the fine grained version
+  @Override
+  public synchronized Optional<E> pop() {
+
     if (root == null) { // empty tree
       return Optional.empty();
     }
@@ -134,28 +156,8 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     }
     size.decrementAndGet();
     return Optional.of(toReturn);
-     */
-    if (root == null) {
-       return Optional.empty();
-       }
-     Node<E> previous = null;
-     Node<E> current = root;
-     while (current.right != null) {
-       previous = current;
-       current = current.right;
-       }
-     E item = current.items.get(0);
-     current.items.remove(0);
-     if (current.items.isEmpty()) {
-       if (previous != null) {
-         previous.right = current.left;
-          } else {
-          root = root.left;
-          }
-        }
-     size.decrementAndGet();
-     return Optional.of(item);
   }
+  */
 
   @Override
   public int size() {
@@ -176,7 +178,5 @@ public class StockImpl<E extends ExchangeableGood> implements Stock<E> {
     private int key() {
       return agent.id;
     }
-
   }
-
 }
